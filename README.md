@@ -1,3 +1,20 @@
+Table of Contents
+=================
+
+* [Implementation Notes](#implementation-notes)
+    * [`AwardQualityCalculators`](#awardqualitycalculators)
+        * [Usage](#usage)
+    * [`AwardCalculator`](#awardcalculator)
+        * [Usage](#usage-1)
+    * [Loading Calculators](#loading-calculators)
+    * [Assumptions](#assumptions)
+* [Caveats, Notes, Questions I'd Discuss With Team IRL](#caveats-notes-questions-id-discuss-with-team-irl)
+    * [Award Calculator Self-Registration](#award-calculator-self-registration)
+    * [`AwardCalculator` Hierarchy and Implementation](#awardcalculator-hierarchy-and-implementation)
+    * [String Identifiers](#string-identifiers)
+    * [RSpec and Contexts](#rspec-and-contexts)
+    * ["Thread" Safety](#thread-safety)
+
 # Implementation Notes
 
 ## `AwardQualityCalculators`
