@@ -41,36 +41,22 @@ class BlueDistinctionPlus
 end
 
 class BlueFirst
-  def update(award)
-    if award.quality < 50
-      award.quality += 1
-      if award.name == 'Blue Compare'
-        if award.expires_in < 11
-          if award.quality < 50
-            award.quality += 1
-          end
-        end
+  def expired?(award)
+    award.expires_in < 0
+  end
 
-        if award.expires_in < 6
-          if award.quality < 50
-            award.quality += 1
-          end
-        end
-      end
-    end
+  def increase_and_adjust_quality(award, n)
+    award.quality += 1
+    award.quality = 50 if award.quality > 50
+  end
+
+  def update(award)
+    increase_and_adjust_quality award, 1
 
     award.expires_in -= 1
 
-    if award.expires_in < 0
-      if award.name != 'Blue First'
-        if award.name == 'Blue Compare'
-          award.quality = award.quality - award.quality
-        end
-      else # Blue First
-        if award.quality < 50
-          award.quality += 1
-        end
-      end
+    if expired?(award)
+      increase_and_adjust_quality award, 1
     end
   end
 end
@@ -97,15 +83,7 @@ class BlueCompare
     award.expires_in -= 1
 
     if award.expires_in < 0
-      if award.name != 'Blue First'
-        if award.name == 'Blue Compare'
-          award.quality = award.quality - award.quality
-        end
-      else # Blue First
-        if award.quality < 50
-          award.quality += 1
-        end
-      end
+      award.quality = 0
     end
   end
 end
