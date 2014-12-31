@@ -5,7 +5,8 @@ class AwardQualityCalculator
     @calculators = {
       "Blue Distinction Plus" => BlueDistinctionPlus,
       "Blue First" => BlueFirst,
-      "Blue Compare" => BlueCompare
+      "Blue Compare" => BlueCompare,
+      "Blue Star" => BlueStar
     }
   end
 
@@ -24,6 +25,20 @@ class AwardCalculator
     @award.expires_in < 0
   end
 
+  def increase_quality_by(n=1)
+    @award.quality += n
+    @award.quality = max_quality if @award.quality > max_quality
+  end
+
+  def max_quality
+    50
+  end
+
+  def lower_quality_by(n=1)
+    return if @award.quality == 0
+    @award.quality -= n
+  end
+
   # Default award blows up: enforce subclass impl.
   def update
     raise 'Unimplemented award type update!'
@@ -33,77 +48,54 @@ end
 # Unknown/other names.
 class Other < AwardCalculator
   def update
-    if @award.quality > 0
-      @award.quality -= 1
-    end
-
+    lower_quality_by 1
     @award.expires_in -= 1
-
-    if @award.expires_in < 0
-      if @award.quality > 0
-        @award.quality -= 1
-      end
-    end
+    lower_quality_by 1 if expired?
   end
 end
 
 # Blue Distinction Plus: never
 # expire and never change quality.
 class BlueDistinctionPlus < AwardCalculator
+  def max_quality; 80; end
+
   def update
-    # Does nothing.
+    if @award.quality != 80
+      raise 'Improper update of Blue Distinction Plus quality; must remain 80'
+    end
   end
 end
 
 class BlueFirst < AwardCalculator
-  def initialize(award)
-    @award = award
-  end
-
-  def expired?
-    @award.expires_in < 0
-  end
-
-  def increase_and_adjust_quality(n)
-    @award.quality += 1
-    @award.quality = 50 if @award.quality > 50
-  end
-
   def update
-    increase_and_adjust_quality 1
-
+    increase_quality_by 1
     @award.expires_in -= 1
-
-    if expired?
-      increase_and_adjust_quality 1
-    end
+    increase_quality_by 1 if expired?
   end
 end
 
 class BlueCompare < AwardCalculator
   def update
-    if @award.quality < 50
-      @award.quality += 1
-      if @award.name == 'Blue Compare'
-        if @award.expires_in < 11
-          if @award.quality < 50
-            @award.quality += 1
-          end
-        end
+    if @award.quality < max_quality
+      increase_quality_by 1
 
-        if @award.expires_in < 6
-          if @award.quality < 50
-            @award.quality += 1
-          end
-        end
+      if @award.expires_in < 11
+        increase_quality_by 1
+      end
+
+      if @award.expires_in < 6
+        increase_quality_by 1
       end
     end
 
     @award.expires_in -= 1
 
-    if @award.expires_in < 0
-      @award.quality = 0
-    end
+    @award.quality = 0 if expired?
+  end
+end
+
+class BlueStar < AwardCalculator
+  def update
   end
 end
 
