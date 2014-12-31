@@ -1,3 +1,79 @@
+# Implementation Notes
+
+## `AwardQualityCalculators`
+
+* Trivial, dirty "plugin" mechanism
+* Static class allows registration of award type calculators by name
+* All quality score updates should go through this class
+
+### Usage
+
+**Registration**
+
+    AwardQualityCalculators.provide(an_award_name, an_award_calculator_class)
+
+**Quality Calculation**
+
+    AwardQualityCalculators.update(an_award)
+
+## `AwardCalculator`
+
+Base class that has a couple of utility methods that most (all?) quality calculators might use. Composites the `Award` that's being updated (this is shady).
+
+### Usage
+
+* The base class defines a `max_quality` function. Subclasses may update this.
+* Each `AwardCalculator` must define its own `update` method. Not defining this method is an error.
+
+## Loading Calculators
+
+* Requiring `award_calculators` loads each of the classes in the `calculators` directory.
+* Each of those classes registers itself after its declaration.
+
+## Assumptions
+
+* The directory holds only award quality calculators.
+* Each calculator registers itself with `AwardQualityCalculators`.
+
+# Caveats, Notes, Questions I'd Discuss With Team IRL
+
+## Award Calculator Self-Registration
+
+Overkill, and I know it.
+
+Originally I created the map manually, but IRL I would rarely do that, especially if it's a mechanism that's likely to change or need extension.
+
+Having each calculator register itself during class loading is fluff, but I preferred it there as it kept things a bit more isolated. It's bad, because to *not* register something means you have to visit the calculator's file instead of having it all in one place.
+
+Normally I wouldn't have the `AwardCalculator` in the same file as the plugin registry; that's an artifact of not wanting to play games with load paths and keeping things simple-ish.
+
+## `AwardCalculator` Hierarchy and Implementation
+
+In general I'm not a huge fan of inheritance, but as the code currently stands, it seemed reasonable.
+
+I pass the award in to the base class ctor so the hierarchies' implementations have easy access to award properties. It's basically composition (a good thing) but as it stands, it seems like `update` is working at multiple levels of abstraction, e.g., hitting `@award` properties directly. I'm iffy on this.
+
+I don't like modifying the composited class in what is essentially a decorator. The reason I do is (a) `Award`, being a struct, has no easy mechanism to hang functionality on, and (b) once I'm in the calculator, I don't want to pass around an `Award` everywhere.
+
+The calculators are a cross between a decorator and a service, sort of. Service in the sense that it's operating on a single award, decorator in the sense that I really didn't want to pass awards between every single method. Also decorator in the sense that there's one per award, solving one class of concurrency issues, but not the underlying issue of mutable awards.
+
+## String Identifiers
+
+The awards are just structs. IRL I'd probably have a more official way of identifying award types (e.g., enum, symbol, class) and associating quality calculators besides string => impl.
+
+## RSpec and Contexts
+
+* I didn't alter the spec to use RSpec 3; IRL I probably would.
+* I would create each `Award` "locally", e.g., right before the test.
+
+I find the reliance of `let` ordering in specs to be foofy. I'd create each `Award` at the point of the spec instead of using the defaults in the top context and the overrides at the spec. It's short enough that there's no reason to make people have to think about what all the values will be by the time it's created.
+
+## "Thread" Safety
+
+IRL an `Award` would probably need to be treated with a bit more respect with regards to concurrent modifications etc. Right now the calculators are working on whatever award is given to it, which is almost always bad.
+
+----
+
 # Vitals Code Test
 
 # Description
@@ -16,7 +92,7 @@ Pretty basic. But here is where it gets interesting...
   - Once the expiration date has passed, quality score degrades twice as fast
 
   - The quality of an award is never negative.
-  
+
   - "Blue First" awards actually increase in quality the older they get
 
   - The quality of an award is never more than 50
